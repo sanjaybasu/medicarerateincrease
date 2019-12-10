@@ -1,0 +1,369 @@
+---
+title: "Medicare pcp spend"
+author: "Sanjay Basu"
+date: "12/4/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library (RCurl)
+library(dplyr)
+library(doBy)
+library(matrixStats)
+library(tidyr)
+library(ggplot2)
+```
+
+## import Medicare Provider Utilization and Payment Data: Physician and Other Supplier PUF CY2017
+
+
+```{r import}
+
+setwd("~/")
+# from: https://data.cms.gov/Medicare-Physician-Supplier/Medicare-Provider-Utilization-and-Payment-Data-Phy/fs4p-t5eq
+dat <- read_csv("https://data.cms.gov/api/views/fs4p-t5eq/rows.csv?accessType=DOWNLOAD")
+
+```
+
+## parse MCare visits/PCP/year by CPT
+
+
+
+```{r visit freq by CPT}
+
+dat_sub = dat %>%
+  select("HCPCS Code","Number of Services","Provider Type", "Average Medicare Allowed Amount")
+
+dat_sub = dat_sub[dat_sub$`Provider Type`=="General Practice" | dat_sub$`Provider Type`=="Internal Medicine" | dat_sub$`Provider Type`=="Family Practice",]
+
+dat_sub = dat_sub[dat_sub$`HCPCS Code`==99201 | dat_sub$`HCPCS Code`==99202 | dat_sub$`HCPCS Code`==99203 | dat_sub$`HCPCS Code`==99204 | dat_sub$`HCPCS Code`==99205 | dat_sub$`HCPCS Code`==99211 | dat_sub$`HCPCS Code`==99212 | dat_sub$`HCPCS Code`==99213 | dat_sub$`HCPCS Code`==99214 | dat_sub$`HCPCS Code`==99215,]
+
+
+visit_freq = dat_sub %>%
+  group_by(`HCPCS Code`) %>%
+  summarise(nmcare = mean(`Number of Services`),
+            nmcarelo = quantile(`Number of Services`,c(.025)),
+            nmcarehi = quantile(`Number of Services`,c(.975))) 
+visit_freq$`HCPCS Code` = as.numeric(visit_freq$`HCPCS Code`)
+
+```
+
+
+
+## import old and new Medicare funding by CPT code
+
+```{r medicare rates}
+hcpcscodes = c(99201,
+99202,
+99203,
+99204,
+99205,
+99211,
+99212,
+99213,
+99214,
+99215)
+
+rates2019 = c( 46.49, 
+ 77.48 ,
+ 109.92 ,
+ 166.86 ,
+ 209.75 ,
+ 23.07 ,
+ 45.77 ,
+ 75.32 ,
+ 110.28 ,
+ 147.76 )
+
+rates2021 =  c(0,   
+ 77.48,
+ 116.41,
+ 172.99,
+ 221.64,
+ 23.07,
+ 48.65,
+ 87.21,
+ 121.45,
+ 172.63)
+
+rates_old <- data.frame(hcpcscodes,rates2019)
+rates_new <- data.frame(hcpcscodes,rates2021)
+
+names(rates_old)=c("HCPCS Code","Rate")
+names(rates_new)=c("HCPCS Code","Rate")
+
+```
+
+## calculate difference in gross revenue per PCP per yr
+
+```{r diff in gross revenue}
+
+rev_old = visit_freq %>%
+  full_join(rates_old) %>%
+  select(`HCPCS Code`, nmcare,nmcarelo,nmcarehi, Rate) %>%
+  mutate(rev = nmcare * Rate,
+         revlo = nmcarelo * Rate,
+         revhi = nmcarehi * Rate)
+
+revold = sum(na.omit(rev_old$rev))
+revoldlo = sum(na.omit(rev_old$revlo))
+revoldhi = sum(na.omit(rev_old$revhi))
+
+rev_new = visit_freq %>%
+  full_join(rates_new) %>%
+  select(`HCPCS Code`, nmcare,nmcarelo,nmcarehi, Rate) %>%
+  mutate(rev = nmcare * Rate,
+         revlo = nmcarelo * Rate,
+         revhi = nmcarehi * Rate)
+
+revnew = sum(na.omit(rev_new$rev))
+revnewlo = sum(na.omit(rev_new$revlo))
+revnewhi = sum(na.omit(rev_new$revhi))
+
+revdiff = revnew - revold
+revdifflo = revnewlo - revoldlo
+revdiffhi = revnewhi - revoldhi
+
+revdiff
+revdifflo
+revdiffhi
+
+```
+
+## change in primary care spending
+
+```{r pri care percent}
+
+# total new Mcare spending due to 2021 rule
+dat_sub = dat %>%
+  select("HCPCS Code","Number of Services","Provider Type", "Average Medicare Allowed Amount")
+
+dat_sub = dat_sub[dat_sub$`Provider Type`=="General Practice" | dat_sub$`Provider Type`=="Internal Medicine" | dat_sub$`Provider Type`=="Family Practice",]
+
+payments_old = dat_sub %>%
+  summarise(ntotpay_pc = sum((`Average Medicare Allowed Amount`)*(`Number of Services`)))
+
+# face validity: primary care as proportion of total Medicare spend, versus 2% estimate from Milbank:
+# 705.9 stat from: https://www.cms.gov/research-statistics-data-and-systems/statistics-trends-and-reports/nationalhealthexpenddata/nhe-fact-sheet/
+# 2% estimate from: https://www.milbank.org/programs/primary-care-spend/other-resources/
+payments_old/(705.9*10^9)
+
+dat_sub$`HCPCS Code` = as.numeric(dat_sub$`HCPCS Code`)
+
+payments_new_pre = dat_sub %>%
+  left_join(rev_new)  %>%
+  mutate(Rate = replace_na(Rate,0)) 
+
+payments_new_pre$newrate = rowMaxs(cbind(payments_new_pre$Rate, payments_new_pre$`Average Medicare Allowed Amount`))
+
+payments_new = payments_new_pre %>%
+  summarise(ntotpay_pc = sum(newrate*(`Number of Services`)))
+
+payments_new/(705.9*10^9)
+
+
+
+```
+
+## time savings from reduced documentation
+
+```{r time}
+set.seed(100)
+prop_mcare = runif(10000,.049,.667)
+
+# in minutes, from doi: 10.1377/hlthaff.2016.0811
+note_time_per_day_invisit = rnorm(10000,1.33,.86/sqrt(471))*60*prop_mcare
+note_time_per_day_outvisit = rnorm(10000,0.52,.72/sqrt(471))*60*prop_mcare
+note_time_per_day_athome = rnorm(10000,0.13+0.11,(.37+.36)/sqrt(471))*60*prop_mcare
+
+visits_per_day = rnorm(10000,12.3,5.3/sqrt(471))
+
+note_time_per_visit_invisit = note_time_per_day_invisit/visits_per_day
+note_time_per_visit_outvisit = note_time_per_day_outvisit/visits_per_day
+note_time_per_visit_athome = note_time_per_day_athome/visits_per_day
+
+time_saved_per_day_invisit = note_time_per_visit_invisit/3* visits_per_day
+time_saved_per_day_outvisit = note_time_per_visit_outvisit/3* visits_per_day
+time_saved_per_day_athome = note_time_per_visit_athome/3* visits_per_day
+
+mean(time_saved_per_day_invisit)
+quantile(time_saved_per_day_invisit,c(.025,.975))
+
+mean(time_saved_per_day_outvisit)
+quantile(time_saved_per_day_outvisit,c(.025,.975))
+
+mean(time_saved_per_day_athome)
+quantile(time_saved_per_day_athome,c(.025,.975))
+
+mean(time_saved_per_day_invisit)+mean(time_saved_per_day_outvisit)+mean(time_saved_per_day_athome)
+
+quantile((time_saved_per_day_invisit)+(time_saved_per_day_outvisit)+(time_saved_per_day_athome),c(.025,.975))
+
+
+
+```
+
+
+## other insurers follow
+
+sum Medicare fees per physician
+subtract out the other revenue
+then increase the diff by same relative proportion 
+add back to new medicare fees
+compare before and after total reve per fte md
+
+```{r expansion}
+
+
+mcare_tot_per_fte = dat %>%
+  select(`National Provider Identifier`, `Average Medicare Allowed Amount`, `Number of Services`) %>%
+  group_by(`National Provider Identifier`) %>%
+  summarise(totmcareperfte = sum(`Average Medicare Allowed Amount` * `Number of Services`))
+
+# MGMA:  FFS revenue per MD FTE: mean 638,634; se = 481,774/sqrt(1325), IQR: $378,463	, $765,092	
+set.seed(100)
+totrev_per_fte = rnorm(length(mcare_tot_per_fte$totmcareperfte),638634, mean(c((638634-378463)/1.96, (765092-378463)/1.96)))
+totrev_per_fte[totrev_per_fte<0] = mean(totrev_per_fte)
+
+otherrev_tot_per_fte = totrev_per_fte - mcare_tot_per_fte$totmcareperfte
+otherrev_tot_per_fte[otherrev_tot_per_fte<0] = mean(otherrev_tot_per_fte)
+
+new_otherrev_tot_per_fte = mean(rates2021[2:10]/rates2019[2:10])*otherrev_tot_per_fte
+mean(new_otherrev_tot_per_fte - otherrev_tot_per_fte + revdiff) 
+quantile((new_otherrev_tot_per_fte - otherrev_tot_per_fte+revdiff),c(.025,.975))
+
+denominator = (otherrev_tot_per_fte+mcare_tot_per_fte$totmcareperfte)/.056 # https://www.pcpcc.org/sites/default/files/resources/pcmh_evidence_report_2019.pdf
+
+
+new_mcare_tot_per_fte = dat %>%
+  select(`National Provider Identifier`, `Average Medicare Allowed Amount`, `Number of Services`, `HCPCS Code`) %>%
+  mutate(`HCPCS Code` = as.numeric(`HCPCS Code`)) %>%
+  left_join(rev_new)  %>%
+  mutate(Rate = replace_na(Rate,0)) 
+
+new_mcare_tot_per_fte$newrate = rowMaxs(cbind(new_mcare_tot_per_fte$Rate, new_mcare_tot_per_fte$`Average Medicare Allowed Amount`))
+
+new_mcare_tot_per_fte  = new_mcare_tot_per_fte %>%
+  group_by(`National Provider Identifier`) %>%
+  summarise(totmcareperfte = sum(newrate * `Number of Services`))
+
+
+summary((otherrev_tot_per_fte+mcare_tot_per_fte$totmcareperfte)/denominator)
+summary((new_otherrev_tot_per_fte+new_mcare_tot_per_fte$totmcareperfte)/denominator)
+summary((new_otherrev_tot_per_fte+new_mcare_tot_per_fte$totmcareperfte)/denominator)-summary((otherrev_tot_per_fte+mcare_tot_per_fte$totmcareperfte)/denominator)
+
+```
+
+## upcoding
+
+```{r upcode}
+
+#5% upcode 3=>4 and 4=>5
+visit_freq2 = visit_freq 
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99205] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99205] + 0.05*visit_freq$nmcare[visit_freq$`HCPCS Code`==99204]
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99204] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99204] - 0.05*visit_freq$nmcare[visit_freq$`HCPCS Code`==99204]
+
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99204] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99204] + 0.05*visit_freq$nmcare[visit_freq$`HCPCS Code`==99203]
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99203] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99203] - 0.05*visit_freq$nmcare[visit_freq$`HCPCS Code`==99203]
+
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99215] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99215] + 0.05*visit_freq$nmcare[visit_freq$`HCPCS Code`==99214]
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99214] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99214] - 0.05*visit_freq$nmcare[visit_freq$`HCPCS Code`==99214]
+
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99214] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99214] + 0.05*visit_freq$nmcare[visit_freq$`HCPCS Code`==99213]
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99213] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99213] - 0.05*visit_freq$nmcare[visit_freq$`HCPCS Code`==99213]
+
+
+rev_new = visit_freq2 %>%
+  full_join(rates_new) %>%
+  select(`HCPCS Code`, nmcare,nmcarelo,nmcarehi, Rate) %>%
+  mutate(rev = nmcare * Rate,
+         revlo = nmcarelo * Rate,
+         revhi = nmcarehi * Rate)
+
+revnew = sum(na.omit(rev_new$rev))
+revnewlo = sum(na.omit(rev_new$revlo))
+revnewhi = sum(na.omit(rev_new$revhi))
+
+revdiff2 = revnew - revold
+revdifflo2 = revnewlo - revoldlo
+revdiffhi2 = revnewhi - revoldhi
+
+revdiff2
+revdifflo2
+revdiffhi2
+
+
+(payments_new/(705.9*10^9) - payments_old/(705.9*10^9))*revdiff2/revdiff
+
+mean(new_otherrev_tot_per_fte - otherrev_tot_per_fte + revdiff) *revdiff2/revdiff
+quantile((new_otherrev_tot_per_fte - otherrev_tot_per_fte+revdiff),c(.025,.975))*revdiff2/revdiff
+revdiff2/revdiff*(summary((new_otherrev_tot_per_fte+new_mcare_tot_per_fte$totmcareperfte)/denominator)-summary((otherrev_tot_per_fte+mcare_tot_per_fte$totmcareperfte)/denominator))
+
+
+# variable upcoding
+
+y = rep(0,11)
+
+for (i in 1:11) {
+visit_freq2 = visit_freq 
+upcoderate = (i-1)/100
+
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99205] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99205] + upcoderate*visit_freq$nmcare[visit_freq$`HCPCS Code`==99204]
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99204] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99204] - upcoderate*visit_freq$nmcare[visit_freq$`HCPCS Code`==99204]
+
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99204] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99204] + upcoderate*visit_freq$nmcare[visit_freq$`HCPCS Code`==99203]
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99203] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99203] - upcoderate*visit_freq$nmcare[visit_freq$`HCPCS Code`==99203]
+
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99215] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99215] + upcoderate*visit_freq$nmcare[visit_freq$`HCPCS Code`==99214]
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99214] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99214] - upcoderate*visit_freq$nmcare[visit_freq$`HCPCS Code`==99214]
+
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99214] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99214] + upcoderate*visit_freq$nmcare[visit_freq$`HCPCS Code`==99213]
+visit_freq2$nmcare[visit_freq2$`HCPCS Code`==99213] = visit_freq$nmcare[visit_freq$`HCPCS Code`==99213] - upcoderate*visit_freq$nmcare[visit_freq$`HCPCS Code`==99213]
+
+
+rev_new = visit_freq2 %>%
+  full_join(rates_new) %>%
+  select(`HCPCS Code`, nmcare,nmcarelo,nmcarehi, Rate) %>%
+  mutate(rev = nmcare * Rate,
+         revlo = nmcarelo * Rate,
+         revhi = nmcarehi * Rate)
+
+revnew = sum(na.omit(rev_new$rev))
+revnewlo = sum(na.omit(rev_new$revlo))
+revnewhi = sum(na.omit(rev_new$revhi))
+
+revdiff2 = revnew - revold
+revdifflo2 = revnewlo - revoldlo
+revdiffhi2 = revnewhi - revoldhi
+
+revdiff2
+revdifflo2
+revdiffhi2
+
+
+y[i] = as.numeric((payments_new/(705.9*10^9) - payments_old/(705.9*10^9))*revdiff2/revdiff*100+2.1)
+
+}
+
+
+x = (1:11-1)
+df = data.frame(x,y)
+p<-ggplot(df, aes(x=x, y=y)) +
+  geom_line(aes(color='firebrick'))+
+  geom_point(aes(color='firebrick'))+
+  scale_y_continuous(limits = c(0, 3)) + 
+  theme_minimal()+
+  xlab("% of visits upcoded (from level-3 to -4, and level-4 to -5)") +
+  ylab(expression(atop("Medicare primary care spending", paste("as % of total Medicare spending")))) +
+  theme(legend.position="none") 
+p 
+
+
+
+```
+
+
