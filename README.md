@@ -4,13 +4,25 @@ Code to reproduce results of:
 
 Potential Implications of Changes in Medicare Payment for Office Visits on Primary Care
 
-Sanjay Basu, MD, PhD*, Russell S. Phillips, MD, Zirui Song, MD, PhD, Asaf Bitton, MD, MPH, Bruce Landon, MD, MBA
+Sanjay Basu, Sanjay Basu, MD, PhD,1,2,3 Zirui Song, MD, PhD,1,4,5 Russell S. Phillips, MD,1,6 Asaf Bitton, MD, MPH,1,4,7,8 Bruce E. Landon, MD, MBA1,4,6
+
+1 Center for Primary Care, Harvard Medical School
+2 Research and Analytics, Collective Health
+3 School of Public Health, Imperial College London
+4 Department of Health Care Policy, Harvard Medical School
+5 Department of Medicine, Massachusetts General Hospital
+6 Division of General Medicine, Beth Israel Deaconness Medical Center
+7 Division of General Medicine, Brigham and Women’s Hospital
+8 Ariadne Labs, Brigham and Women’s Hospital and Harvard T.H. Chan School of Public Health
+MD, PhD*, Russell S. Phillips, MD, Zirui Song, MD, PhD, Asaf Bitton, MD, MPH, Bruce Landon, MD, MBA
+
+*sanjay_basu@hms.harvard.edu
+
 
 Primary care is conceptualized as accessible, timely, first-contact care that is comprehensive, coordinated, and longitudinal.1 Primary care in the U.S., however, often falls short of these goals. Many have attributed this to a payment system that underpays services provided by primary care physicians (PCPs) and primary care teams, including non-visit based care.2 In addition, relatively few medical students choose primary care which, along with the retirement of older PCPs, may lead to an insufficient workforce for an aging population.3 In response, proposals to pay primary care more are being considered, including several by states aiming to raise the share of total health care spending on primary care to 7-12%.4,5 
   
 Recently, the Centers for Medicare and Medicaid Services (CMS) finalized the first major change to primary care payment in the Physician Fee Schedule in decades, which raises fees for evaluation and management visits and lowers documentation requirements beginning in 2021.6 We sought to estimate the potential impact of this policy on primary care spending and the extent to which it might approach targeted levels.4 In addition, we simulated the potential implications of the reduced documentation requirements on time use in primary care practices.   
   
-*sanjay_basu@hms.harvard.edu
 
 
 References
