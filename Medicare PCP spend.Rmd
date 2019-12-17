@@ -199,7 +199,31 @@ new_mcare_tot_per_fte  = new_mcare_tot_per_fte %>%
 summary((otherrev_tot_per_fte+mcare_tot_per_fte$totmcareperfte)/denominator)
 summary((new_otherrev_tot_per_fte+new_mcare_tot_per_fte$totmcareperfte)/denominator)
 summary((new_otherrev_tot_per_fte+new_mcare_tot_per_fte$totmcareperfte)/denominator)-summary((otherrev_tot_per_fte+mcare_tot_per_fte$totmcareperfte)/denominator)
+
+
+# in minutes, from doi: 10.1377/hlthaff.2016.0811
+note_time_per_day_invisit = rnorm(10000,1.33,.86/sqrt(471))*60
+note_time_per_day_outvisit = rnorm(10000,0.52,.72/sqrt(471))*60
+note_time_per_day_athome = rnorm(10000,0.13+0.11,(.37+.36)/sqrt(471))*60
+visits_per_day = rnorm(10000,12.3,5.3/sqrt(471))
+note_time_per_visit_invisit = note_time_per_day_invisit/visits_per_day
+note_time_per_visit_outvisit = note_time_per_day_outvisit/visits_per_day
+note_time_per_visit_athome = note_time_per_day_athome/visits_per_day
+time_saved_per_day_invisit = note_time_per_visit_invisit/3* visits_per_day
+time_saved_per_day_outvisit = note_time_per_visit_outvisit/3* visits_per_day
+time_saved_per_day_athome = note_time_per_visit_athome/3* visits_per_day
+mean(time_saved_per_day_invisit)
+quantile(time_saved_per_day_invisit,c(.025,.975))
+mean(time_saved_per_day_outvisit)
+quantile(time_saved_per_day_outvisit,c(.025,.975))
+mean(time_saved_per_day_athome)
+quantile(time_saved_per_day_athome,c(.025,.975))
+mean(time_saved_per_day_invisit)+mean(time_saved_per_day_outvisit)+mean(time_saved_per_day_athome)
+quantile((time_saved_per_day_invisit)+(time_saved_per_day_outvisit)+(time_saved_per_day_athome),c(.025,.975))
+
+
 ```
+
 
 ## upcoding
 
