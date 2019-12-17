@@ -2,12 +2,13 @@
 
 Code to reproduce results of:
 
-Primary care payment fixes... a bridge too short for a river too wide?
+Potential Implications of Changes in Medicare Payment for Office Visits on Primary Care
+
 Sanjay Basu, MD, PhD*, Russell S. Phillips, MD, Zirui Song, MD, PhD, Asaf Bitton, MD, MPH, Bruce Landon, MD, MBA
 
-Primary care has been ideally conceptualized as accessible, timely, first-contact care that is comprehensive, coordinated, and longitudinal.1 Primary care in the US, however, falls far short of these goals, which many blame on a payment system that underpays for comprehensive services provided by primary care practitioners (PCPs) and fails to provide adequate compensation for non-visit based services that delivery of primary care requires. As a consequence, current reimbursement of primary care fails to adequately pay for actual services provided.2 In addition, few medical students choose primary care which, along with the retirement of older PCPs, will soon result in an insufficient workforce to care for an aging population.3 To counter these trends, explicit strategies to increase the amount of total health care spending devoted to primary care are being proposed4 (with states targeting spending of 7% to 12% of total healthcare expenditures on primary care) 5 Recently, the Centers for Medicare and Medicaid Services (CMS) finalized important changes to PCP reimbursement in the Physician Fee Schedule (to begin in 2021) wherein primary care fee-for-service per-visit payments were increased, and documentation requirements decreased for Medicare patients.6 
-
+Primary care is conceptualized as accessible, timely, first-contact care that is comprehensive, coordinated, and longitudinal.1 Primary care in the U.S., however, often falls short of these goals. Many have attributed this to a payment system that underpays services provided by primary care physicians (PCPs) and primary care teams, including non-visit based care.2 In addition, relatively few medical students choose primary care which, along with the retirement of older PCPs, may lead to an insufficient workforce for an aging population.3 In response, proposals to pay primary care more are being considered, including several by states aiming to raise the share of total health care spending on primary care to 7-12%.4,5 
   
+Recently, the Centers for Medicare and Medicaid Services (CMS) finalized the first major change to primary care payment in the Physician Fee Schedule in decades, which raises fees for evaluation and management visits and lowers documentation requirements beginning in 2021.6 We sought to estimate the potential impact of this policy on primary care spending and the extent to which it might approach targeted levels.4 In addition, we simulated the potential implications of the reduced documentation requirements on time use in primary care practices.   
   
 *sanjay_basu@hms.harvard.edu
 
