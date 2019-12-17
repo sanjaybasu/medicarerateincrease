@@ -4,7 +4,7 @@ Code to reproduce results of:
 
 Potential Implications of Changes in Medicare Payment for Office Visits on Primary Care
 
-Sanjay Basu, Sanjay Basu, MD, PhD,1,2,3 Zirui Song, MD, PhD,1,4,5 Russell S. Phillips, MD,1,6 Asaf Bitton, MD, MPH,1,4,7,8 Bruce E. Landon, MD, MBA1,4,6
+Sanjay Basu, MD, PhD,1,2,3 Zirui Song, MD, PhD,1,4,5 Russell S. Phillips, MD,1,6 Asaf Bitton, MD, MPH,1,4,7,8 Bruce E. Landon, MD, MBA1,4,6
 
 1 Center for Primary Care, Harvard Medical School
 2 Research and Analytics, Collective Health
@@ -14,7 +14,6 @@ Sanjay Basu, Sanjay Basu, MD, PhD,1,2,3 Zirui Song, MD, PhD,1,4,5 Russell S. Phi
 6 Division of General Medicine, Beth Israel Deaconness Medical Center
 7 Division of General Medicine, Brigham and Women’s Hospital
 8 Ariadne Labs, Brigham and Women’s Hospital and Harvard T.H. Chan School of Public Health
-MD, PhD*, Russell S. Phillips, MD, Zirui Song, MD, PhD, Asaf Bitton, MD, MPH, Bruce Landon, MD, MBA
 
 *sanjay_basu@hms.harvard.edu
 
